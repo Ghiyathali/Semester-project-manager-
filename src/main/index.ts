@@ -22,6 +22,9 @@ function createWindow(): void {
     autoHideMenuBar: true,
     backgroundColor: '#f7f7f6',
     title: 'Semester Project Manager',
+    // Packaged builds take the icon from the executable itself; this is only so
+    // `npm run dev` does not show the generic Electron logo.
+    ...(is.dev ? { icon: path.join(app.getAppPath(), 'resources', 'icon.png') } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
