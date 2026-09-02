@@ -12,7 +12,7 @@ import { diffDays, eachDay, inclusiveDays, parseDate } from '@core/dates'
 import { PHASE_LABEL, type DateStr } from '@core/types'
 
 import { Card, EmptyState, PageHeader, PhaseBadge } from '../components/ui'
-import { projectSlots, today, weeklyLoad } from '../lib/derive'
+import { currentPhase, projectSlots, today, weeklyLoad } from '../lib/derive'
 import { formatDate, formatHours, formatRange, pluralise } from '../lib/format'
 import { useStore } from '../store/useStore'
 
@@ -53,8 +53,8 @@ export function Roadmap() {
   const model = useMemo(() => {
     if (!snapshot) return null
     const slots = projectSlots(snapshot)
-    return { slots, weeks: weeklyLoad(snapshot, slots) }
-  }, [snapshot])
+    return { slots, weeks: weeklyLoad(snapshot, slots), phase: currentPhase(snapshot, now) }
+  }, [snapshot, now])
 
   if (!snapshot || !model) return null
 
@@ -87,10 +87,11 @@ export function Roadmap() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Roadmap"
-        description={`${formatRange(start, end)} - ${pluralise(snapshot.sprints.length, 'sprint')} across ${pluralise(snapshot.phases.length, 'phase')}.`}
+        phase={model.phase?.kind}
+        description={`${formatRange(start, end)} — ${pluralise(snapshot.sprints.length, 'sprint')} across ${pluralise(snapshot.phases.length, 'phase')}.`}
         actions={
           <div className="flex gap-1">
             {ZOOMS.map((option, index) => (
@@ -150,7 +151,7 @@ export function Roadmap() {
                   width={Math.max(1, 7 * dayWidth - 2)}
                   height={height}
                   rx={1}
-                  fill="rgb(var(--accent))"
+                  fill="rgb(var(--page))"
                   opacity={0.35}
                 >
                   <title>
@@ -206,7 +207,7 @@ export function Roadmap() {
                     height={ROW.sprintsHeight}
                     rx={3}
                     fill="rgb(var(--surface-raised))"
-                    stroke={isCurrent ? 'rgb(var(--accent))' : 'rgb(var(--line))'}
+                    stroke={isCurrent ? 'rgb(var(--page))' : 'rgb(var(--line-strong))'}
                     strokeWidth={isCurrent ? 2 : 1}
                   >
                     <title>
@@ -234,7 +235,7 @@ export function Roadmap() {
               <g key={`m-${milestone.id}`} transform={`translate(${x(milestone.date) + dayWidth / 2}, 0)`}>
                 <path
                   d={`M 0 ${ROW.markers} l 7 8 l -7 8 l -7 -8 z`}
-                  fill={PHASE_FILL[milestone.phaseKind] ?? 'rgb(var(--accent))'}
+                  fill={PHASE_FILL[milestone.phaseKind] ?? 'rgb(var(--page))'}
                 >
                   <title>{`${milestone.name} - ${formatDate(milestone.date)}`}</title>
                 </path>
@@ -275,7 +276,7 @@ export function Roadmap() {
                   x2={x(now) + dayWidth / 2}
                   y1={ROW.ticks}
                   y2={CHART_HEIGHT}
-                  stroke="rgb(var(--accent))"
+                  stroke="rgb(var(--page))"
                   strokeWidth={2}
                 />
                 <text
@@ -283,7 +284,7 @@ export function Roadmap() {
                   y={ROW.ticks + 11}
                   fontSize={10}
                   fontWeight={700}
-                  fill="rgb(var(--accent))"
+                  fill="rgb(var(--page))"
                 >
                   today
                 </text>
@@ -325,8 +326,13 @@ export function Roadmap() {
           </ul>
         </Card>
 
-        <Card title="Sprints">
-          <div className="max-h-[26rem] overflow-y-auto">
+        <details className="card group self-start">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3">
+            <span className="text-ink-faint transition-transform group-open:rotate-90" aria-hidden>&rsaquo;</span>
+            <span className="card-title">All sprints</span>
+            <span className="ml-auto text-xs text-ink-muted">{snapshot.sprints.length}</span>
+          </summary>
+          <div className="max-h-[26rem] overflow-y-auto border-t border-line">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-surface-raised text-left text-xs uppercase tracking-wide text-ink-muted">
                 <tr className="border-b border-line">
@@ -339,7 +345,7 @@ export function Roadmap() {
                 {snapshot.sprints.map((sprint) => {
                   const isCurrent = now >= sprint.startDate && now <= sprint.endDate
                   return (
-                    <tr key={sprint.id} className={isCurrent ? 'bg-accent/5' : ''}>
+                    <tr key={sprint.id} className={isCurrent ? 'bg-page/5' : ''}>
                       <td className="table-cell">
                         <span className={isCurrent ? 'font-semibold' : ''}>{sprint.name}</span>
                         <p className="mt-0.5 max-w-sm text-xs text-ink-muted">{sprint.goal}</p>
@@ -359,7 +365,7 @@ export function Roadmap() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </details>
       </div>
     </div>
   )

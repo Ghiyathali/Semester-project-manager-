@@ -3,56 +3,84 @@
 @tailwind utilities;
 
 /*
- * One neutral surface scale, one accent, four phase colours. Everything else is
- * spacing and type. The aim is a tool that stays readable for four months, not
- * one that impresses for four minutes.
+ * The palette.
+ *
+ * Two ideas hold the interface together:
+ *
+ * 1. `--page` is the colour of the UP phase you are currently in. It is set on
+ *    a wrapper via `data-phase` and everything downstream reads it, so the app
+ *    visibly changes character as the semester moves from Inception through to
+ *    Transition. Colour carries information here rather than decoration.
+ *
+ * 2. Not everything is a card. Bordered boxes are reserved for content you act
+ *    on; grouped content sits under a plain heading. An earlier version drew a
+ *    border around all eight blocks on the dashboard, which left the eye with
+ *    no idea where to start.
  */
 :root {
-  --surface: 250 250 249;
+  --surface: 252 252 251;
   --surface-raised: 255 255 255;
-  --surface-sunken: 245 245 244;
-  --line: 231 229 228;
-  --ink: 28 25 23;
-  --ink-muted: 87 83 78;
-  --ink-faint: 168 162 158;
-  --accent: 15 118 110;
-  --accent-soft: 204 251 241;
+  --surface-sunken: 245 245 243;
+  --line: 230 229 226;
+  --line-strong: 214 213 209;
+  --ink: 26 26 24;
+  --ink-muted: 92 92 86;
+  --ink-faint: 148 148 141;
+  --accent: 13 124 116;
+  --accent-soft: 222 248 244;
   --accent-ink: 255 255 255;
 
-  --phase-inception: 71 85 105;
-  --phase-elaboration: 180 83 9;
-  --phase-construction: 21 128 61;
-  --phase-transition: 126 34 206;
+  --phase-inception: 79 96 122;
+  --phase-elaboration: 176 92 20;
+  --phase-construction: 27 122 74;
+  --phase-transition: 118 58 186;
 
-  --ok: 21 128 61;
-  --warn: 180 83 9;
-  --danger: 185 28 28;
+  --ok: 27 122 74;
+  --warn: 176 92 20;
+  --danger: 186 40 40;
+
+  /* Overridden per page by [data-phase]; this is the fallback. */
+  --page: var(--accent);
 
   color-scheme: light;
 }
 
 .dark {
-  --surface: 24 24 27;
-  --surface-raised: 39 39 42;
-  --surface-sunken: 16 16 18;
-  --line: 63 63 70;
-  --ink: 244 244 245;
-  --ink-muted: 161 161 170;
-  --ink-faint: 113 113 122;
-  --accent: 45 212 191;
-  --accent-soft: 19 78 74;
-  --accent-ink: 9 9 11;
+  --surface: 22 23 26;
+  --surface-raised: 32 34 38;
+  --surface-sunken: 16 17 19;
+  --line: 52 55 61;
+  --line-strong: 71 75 82;
+  --ink: 240 240 242;
+  --ink-muted: 166 168 176;
+  --ink-faint: 116 119 127;
+  --accent: 54 216 196;
+  --accent-soft: 18 74 68;
+  --accent-ink: 9 12 12;
 
-  --phase-inception: 148 163 184;
-  --phase-elaboration: 251 191 36;
-  --phase-construction: 74 222 128;
-  --phase-transition: 192 132 252;
+  --phase-inception: 150 172 202;
+  --phase-elaboration: 240 178 80;
+  --phase-construction: 82 208 140;
+  --phase-transition: 190 140 250;
 
-  --ok: 74 222 128;
-  --warn: 251 191 36;
+  --ok: 82 208 140;
+  --warn: 240 178 80;
   --danger: 248 113 113;
 
   color-scheme: dark;
+}
+
+[data-phase='inception'] {
+  --page: var(--phase-inception);
+}
+[data-phase='elaboration'] {
+  --page: var(--phase-elaboration);
+}
+[data-phase='construction'] {
+  --page: var(--phase-construction);
+}
+[data-phase='transition'] {
+  --page: var(--phase-transition);
 }
 
 html,
@@ -64,34 +92,77 @@ body,
 body {
   @apply bg-surface text-ink antialiased;
   font-size: 14px;
+  line-height: 1.5;
 }
 
-/* Keyboard focus stays visible everywhere; this app is used a lot with the keyboard. */
 :focus-visible {
-  @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-surface;
+  @apply outline-none ring-2 ring-page ring-offset-2 ring-offset-surface;
 }
 
 @layer components {
+  /* --- Surfaces ------------------------------------------------------- */
+
   .card {
-    @apply rounded-lg border border-line bg-surface-raised;
+    @apply rounded-xl border border-line bg-surface-raised;
+  }
+
+  /* The one block on a page that should be looked at first. */
+  .card-hero {
+    @apply rounded-xl border border-page/25 bg-page/[0.07];
+  }
+
+  .card-quiet {
+    @apply rounded-xl bg-surface-sunken;
   }
 
   .card-header {
-    @apply flex items-baseline justify-between gap-3 border-b border-line px-4 py-3;
+    @apply flex items-center justify-between gap-3 px-4 pb-2 pt-3.5;
   }
 
   .card-title {
-    @apply text-sm font-semibold tracking-tight;
+    @apply text-[13px] font-semibold tracking-tight;
   }
 
+  /* A heading for content that does not need a box around it. */
+  .section-title {
+    @apply mb-2 flex items-center justify-between gap-3 text-[13px] font-semibold tracking-tight;
+  }
+
+  /* --- Type ----------------------------------------------------------- */
+
+  .page-title {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  .stat {
+    @apply text-[26px] font-semibold leading-none tabular-nums tracking-tight;
+  }
+
+  .stat-lg {
+    @apply text-[38px] font-semibold leading-none tabular-nums tracking-tight;
+  }
+
+  /* Quiet sentence-case label. Replaces the wall of uppercase micro-text
+     the first version used on every field and tile. */
+  .label {
+    @apply mb-1 block text-xs font-medium text-ink-muted;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-wider text-ink-faint;
+  }
+
+  /* --- Controls ------------------------------------------------------- */
+
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-line
-           bg-surface-raised px-3 py-1.5 text-sm font-medium transition-colors
-           hover:bg-surface-sunken disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line
+           bg-surface-raised px-3 py-1.5 text-[13px] font-medium transition-colors
+           hover:border-line-strong hover:bg-surface-sunken
+           disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-primary {
-    @apply border-transparent bg-accent text-accent-ink hover:bg-accent/90;
+    @apply border-transparent bg-page text-white hover:bg-page/90 hover:border-transparent;
   }
 
   .btn-ghost {
@@ -99,61 +170,62 @@ body {
   }
 
   .btn-danger {
-    @apply border-transparent bg-danger text-white hover:bg-danger/90;
+    @apply border-transparent bg-danger text-white hover:bg-danger/90 hover:border-transparent;
   }
 
   .btn-sm {
-    @apply px-2 py-1 text-xs;
+    @apply rounded-md px-2 py-1 text-xs;
   }
 
   .input {
-    @apply w-full rounded-md border border-line bg-surface-raised px-2.5 py-1.5 text-sm
-           placeholder:text-ink-faint focus:border-accent;
-  }
-
-  .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-ink-muted;
+    @apply w-full rounded-lg border border-line bg-surface-raised px-2.5 py-1.5 text-[13px]
+           placeholder:text-ink-faint focus:border-page;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
-  }
-
-  .stat {
-    @apply text-2xl font-semibold tabular-nums tracking-tight;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium;
   }
 
   .table-cell {
     @apply px-3 py-2 align-top;
   }
+
+  /* Row-level separation without a border on every element. */
+  .row {
+    @apply flex items-center gap-3 px-4 py-2.5;
+  }
+
+  .row-hover {
+    @apply transition-colors hover:bg-surface-sunken/70;
+  }
 }
 
-/* FullCalendar, toned down to match the rest of the app. */
+/* FullCalendar, toned to match. */
 .fc {
   --fc-border-color: rgb(var(--line));
   --fc-page-bg-color: rgb(var(--surface-raised));
   --fc-neutral-bg-color: rgb(var(--surface-sunken));
-  --fc-today-bg-color: rgb(var(--accent-soft) / 0.35);
+  --fc-today-bg-color: rgb(var(--page) / 0.09);
   --fc-event-border-color: transparent;
   font-size: 12px;
 }
 
 .fc .fc-toolbar-title {
-  @apply text-base font-semibold;
+  @apply text-base font-semibold tracking-tight;
 }
 
 .fc .fc-button {
-  @apply rounded-md border border-line bg-surface-raised px-2 py-1 text-xs font-medium
+  @apply rounded-lg border border-line bg-surface-raised px-2.5 py-1 text-xs font-medium
          capitalize text-ink shadow-none;
 }
 
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-  @apply border-transparent bg-accent text-accent-ink;
+  @apply border-transparent bg-page text-white;
 }
 
 .fc .fc-button-primary:disabled {
-  @apply border-line bg-surface-sunken text-ink-faint;
+  @apply border-line bg-surface-sunken text-ink-faint opacity-100;
 }
 
 .fc .fc-daygrid-day-number,
@@ -173,7 +245,7 @@ body {
 /* Scrollbars that do not shout. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--line)) transparent;
+  scrollbar-color: rgb(var(--line-strong)) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -182,5 +254,5 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply rounded-full border-4 border-solid border-transparent bg-line bg-clip-content;
+  @apply rounded-full border-4 border-solid border-transparent bg-line-strong bg-clip-content;
 }

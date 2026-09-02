@@ -1,8 +1,10 @@
 /**
  * The Unified Process deliverables, grouped by phase.
  *
- * This is the screen that answers "what am I actually supposed to hand in, and
- * when" - the part of UP that students most often discover too late.
+ * This screen answers "what am I actually supposed to hand in, and when" - the
+ * part of UP students most often discover too late. Only the phase you are in
+ * is expanded; the rest stay folded, because seeing all twenty-odd deliverables
+ * at once is what made this page unreadable.
  */
 import { useState } from 'react'
 
@@ -15,9 +17,17 @@ import {
 } from '@core/types'
 import type { ArtifactRecord } from '@shared/models'
 
-import { Card, EmptyState, Field, Modal, PageHeader, PhaseBadge, ProgressBar } from '../components/ui'
+import {
+  Card,
+  EmptyState,
+  Field,
+  Modal,
+  PageHeader,
+  PhaseBadge,
+  ProgressBar
+} from '../components/ui'
 import { formatDate, formatRange } from '../lib/format'
-import { today } from '../lib/derive'
+import { currentPhase, today } from '../lib/derive'
 import { useStore } from '../store/useStore'
 
 const STATUSES: ArtifactStatus[] = ['not_started', 'in_progress', 'in_review', 'done']
@@ -41,7 +51,7 @@ export function Artifacts() {
   if (snapshot.artifacts.length === 0) {
     return (
       <div>
-        <PageHeader title="UP deliverables" />
+        <PageHeader title="Deliverables" />
         <Card>
           <EmptyState
             title="No deliverables yet"
@@ -52,15 +62,18 @@ export function Artifacts() {
     )
   }
 
-  const done = snapshot.artifacts.filter((a) => a.status === 'done').length
+  const activePhase = currentPhase(snapshot, now)
+  const visible = snapshot.artifacts.filter((a) => showOptional || !a.isOptional)
+  const done = visible.filter((a) => a.status === 'done').length
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
-        title="UP deliverables"
+        title="Deliverables"
+        phase={activePhase?.kind}
         description="Standard Unified Process artifacts, dated against the gate they belong to. Delete anything your course does not require."
         actions={
-          <label className="flex items-center gap-1.5 text-sm">
+          <label className="flex items-center gap-1.5 text-[13px]">
             <input
               type="checkbox"
               checked={showOptional}
@@ -71,134 +84,129 @@ export function Artifacts() {
         }
       />
 
-      <Card>
-        <div className="flex items-center gap-4 px-4 py-3">
-          <div className="flex-1">
-            <div className="flex justify-between text-xs text-ink-muted">
-              <span>Deliverables complete</span>
-              <span className="tabular-nums">
-                {done} / {snapshot.artifacts.length}
-              </span>
-            </div>
-            <ProgressBar className="mt-1.5" tone="ok" value={done / snapshot.artifacts.length} />
-          </div>
+      <div className="rounded-xl border border-line bg-surface-raised px-5 py-4">
+        <div className="flex items-baseline justify-between">
+          <span className="text-[13px] font-medium">Overall progress</span>
+          <span className="text-[13px] tabular-nums text-ink-muted">
+            {done} of {visible.length} complete
+          </span>
         </div>
-      </Card>
+        <ProgressBar className="mt-2.5" thick tone="page" value={done / (visible.length || 1)} />
+      </div>
 
-      {snapshot.phases.map((phase) => {
-        const artifacts = snapshot.artifacts
-          .filter((artifact) => artifact.phaseKind === phase.kind)
-          .filter((artifact) => showOptional || !artifact.isOptional)
-        const milestone = snapshot.milestones.find((m) => m.phaseKind === phase.kind)
+      <div className="space-y-3">
+        {snapshot.phases.map((phase) => {
+          const artifacts = visible.filter((artifact) => artifact.phaseKind === phase.kind)
+          const milestone = snapshot.milestones.find((m) => m.phaseKind === phase.kind)
+          const phaseDone = artifacts.filter((a) => a.status === 'done').length
+          const isCurrent = activePhase?.kind === phase.kind
+          const late = artifacts.filter((a) => a.dueDate < now && a.status !== 'done').length
 
-        return (
-          <Card
-            key={phase.id}
-            title={
-              <span className="flex items-center gap-2">
+          return (
+            <details key={phase.id} open={isCurrent} className="card group">
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3">
+                <span
+                  className="text-ink-faint transition-transform group-open:rotate-90"
+                  aria-hidden
+                >
+                  &rsaquo;
+                </span>
                 <PhaseBadge phase={phase.kind} />
-                <span className="text-xs font-normal text-ink-muted">
+                <span className="hidden text-xs tabular-nums text-ink-muted sm:inline">
                   {formatRange(phase.startDate, phase.endDate)}
                 </span>
-              </span>
-            }
-            actions={
-              milestone && (
-                <span className="text-xs text-ink-muted">
-                  Gate {milestone.kind} on {formatDate(milestone.date)}
+                <span className="ml-auto flex items-center gap-3 text-xs tabular-nums">
+                  {late > 0 && <span className="text-danger">{late} overdue</span>}
+                  <span className="text-ink-muted">
+                    {phaseDone}/{artifacts.length}
+                  </span>
                 </span>
-              )
-            }
-          >
-            <p className="border-b border-line px-4 py-2 text-xs text-ink-muted">
-              {PHASE_INTENT[phase.kind]}
-            </p>
+              </summary>
 
-            {milestone && (
-              <div className="flex items-start gap-3 border-b border-line bg-surface-sunken/60 px-4 py-2.5">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={milestone.status === 'done'}
-                  onChange={(event) =>
-                    void saveMilestone({
-                      id: milestone.id,
-                      status: event.target.checked ? 'done' : 'pending'
-                    })
-                  }
-                  aria-label={`Mark ${milestone.name} passed`}
-                />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{milestone.name}</p>
-                  <p className="text-xs text-ink-muted">
-                    {MILESTONE_META[milestone.kind as keyof typeof MILESTONE_META]?.question ??
-                      milestone.description}
-                  </p>
-                </div>
-                <span
-                  className={`ml-auto shrink-0 text-xs tabular-nums ${
-                    milestone.date < now && milestone.status !== 'done'
-                      ? 'text-danger'
-                      : 'text-ink-muted'
-                  }`}
-                >
-                  {formatDate(milestone.date)}
-                </span>
-              </div>
-            )}
+              <p className="border-t border-line px-4 py-2.5 text-xs leading-snug text-ink-muted">
+                {PHASE_INTENT[phase.kind]}
+              </p>
 
-            <ul className="divide-y divide-line">
-              {artifacts.map((artifact) => {
-                const late = artifact.dueDate < now && artifact.status !== 'done'
-                return (
-                  <li key={artifact.id} className="flex items-start gap-3 px-4 py-2.5">
-                    <input
-                      type="checkbox"
-                      className="mt-1"
-                      checked={artifact.status === 'done'}
-                      onChange={(event) =>
-                        void saveArtifact({
-                          id: artifact.id,
-                          status: event.target.checked ? 'done' : 'in_progress'
-                        })
-                      }
-                      aria-label={`Mark ${artifact.name} done`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+              {milestone && (
+                <label className="flex cursor-pointer items-start gap-3 border-t border-line bg-surface-sunken/60 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={milestone.status === 'done'}
+                    onChange={(event) =>
+                      void saveMilestone({
+                        id: milestone.id,
+                        status: event.target.checked ? 'done' : 'pending'
+                      })
+                    }
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium">{milestone.name}</p>
+                    <p className="mt-0.5 text-xs leading-snug text-ink-muted">
+                      {MILESTONE_META[milestone.kind as keyof typeof MILESTONE_META]?.question ??
+                        milestone.description}
+                    </p>
+                  </div>
+                  <span
+                    className={`ml-auto shrink-0 text-xs tabular-nums ${
+                      milestone.date < now && milestone.status !== 'done'
+                        ? 'text-danger'
+                        : 'text-ink-muted'
+                    }`}
+                  >
+                    {formatDate(milestone.date)}
+                  </span>
+                </label>
+              )}
+
+              <ul className="divide-y divide-line border-t border-line">
+                {artifacts.map((artifact) => {
+                  const isLate = artifact.dueDate < now && artifact.status !== 'done'
+                  return (
+                    <li key={artifact.id} className="row-hover flex items-start gap-3 px-4 py-2.5">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={artifact.status === 'done'}
+                        onChange={(event) =>
+                          void saveArtifact({
+                            id: artifact.id,
+                            status: event.target.checked ? 'done' : 'in_progress'
+                          })
+                        }
+                        aria-label={`Mark ${artifact.name} done`}
+                      />
+                      <div className="min-w-0 flex-1">
                         <button
-                          className={`text-left text-sm hover:text-accent ${
+                          className={`text-left text-[13px] hover:text-page ${
                             artifact.status === 'done' ? 'text-ink-muted line-through' : ''
                           }`}
                           onClick={() => setEditing(artifact)}
                         >
                           {artifact.name}
                         </button>
-                        {artifact.isOptional && (
-                          <span className="chip bg-surface-sunken text-ink-muted">optional</span>
-                        )}
-                        <span className="chip bg-surface-sunken text-ink-muted">
-                          {DISCIPLINE_LABEL[artifact.discipline as Discipline] ?? artifact.discipline}
-                        </span>
+                        <p className="mt-0.5 text-xs leading-snug text-ink-muted">
+                          {DISCIPLINE_LABEL[artifact.discipline as Discipline] ??
+                            artifact.discipline}
+                          {artifact.isOptional && ' · optional'}
+                        </p>
                       </div>
-                      <p className="mt-0.5 text-xs text-ink-muted">{artifact.description}</p>
-                      {artifact.link && (
-                        <p className="mt-0.5 truncate text-xs text-accent">{artifact.link}</p>
-                      )}
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className={`text-xs tabular-nums ${late ? 'text-danger' : 'text-ink-muted'}`}>
-                        {formatDate(artifact.dueDate)}
-                      </p>
-                      <p className="text-xs text-ink-faint">{STATUS_LABEL[artifact.status]}</p>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          </Card>
-        )
-      })}
+                      <div className="shrink-0 text-right">
+                        <p
+                          className={`text-xs tabular-nums ${isLate ? 'text-danger' : 'text-ink-muted'}`}
+                        >
+                          {formatDate(artifact.dueDate)}
+                        </p>
+                        <p className="text-xs text-ink-faint">{STATUS_LABEL[artifact.status]}</p>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </details>
+          )
+        })}
+      </div>
 
       <ArtifactEditor artifact={editing} onClose={() => setEditing(null)} />
     </div>
@@ -214,26 +222,21 @@ function ArtifactEditor({
 }) {
   const saveArtifact = useStore((state) => state.saveArtifact)
   const [draft, setDraft] = useState<Partial<ArtifactRecord>>({})
-
   const current = { ...artifact, ...draft }
+
+  function close() {
+    setDraft({})
+    onClose()
+  }
 
   return (
     <Modal
       open={artifact !== null}
       title={artifact?.name ?? ''}
-      onClose={() => {
-        setDraft({})
-        onClose()
-      }}
+      onClose={close}
       footer={
         <>
-          <button
-            className="btn"
-            onClick={() => {
-              setDraft({})
-              onClose()
-            }}
-          >
+          <button className="btn" onClick={close}>
             Cancel
           </button>
           <button
@@ -248,8 +251,7 @@ function ArtifactEditor({
                 status: current.status,
                 link: current.link
               })
-              setDraft({})
-              onClose()
+              close()
             }}
           >
             Save
@@ -277,9 +279,7 @@ function ArtifactEditor({
           <select
             className="input"
             value={current.status ?? 'not_started'}
-            onChange={(event) =>
-              setDraft({ ...draft, status: event.target.value as ArtifactStatus })
-            }
+            onChange={(event) => setDraft({ ...draft, status: event.target.value as ArtifactStatus })}
           >
             {STATUSES.map((status) => (
               <option key={status} value={status}>
@@ -291,7 +291,7 @@ function ArtifactEditor({
         <Field
           label="Link or file path"
           className="sm:col-span-2"
-          hint="Where the document lives - a path in your repo, an Overleaf link, anything."
+          hint="Where the document lives — a path in your repo, an Overleaf link, anything."
         >
           <input
             className="input"
@@ -307,8 +307,8 @@ function ArtifactEditor({
           />
         </Field>
       </div>
-      <p className="mt-3 text-xs text-ink-muted">
-        Editing a deliverable marks it as yours - a later re-plan will move the generated ones but
+      <p className="mt-3 text-xs leading-snug text-ink-muted">
+        Editing a deliverable marks it as yours — a later re-plan will move the generated ones but
         leave this one where you put it.
       </p>
     </Modal>

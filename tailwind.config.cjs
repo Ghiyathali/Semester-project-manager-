@@ -11,7 +11,10 @@ module.exports = {
           raised: 'rgb(var(--surface-raised) / <alpha-value>)',
           sunken: 'rgb(var(--surface-sunken) / <alpha-value>)'
         },
-        line: 'rgb(var(--line) / <alpha-value>)',
+        line: {
+          DEFAULT: 'rgb(var(--line) / <alpha-value>)',
+          strong: 'rgb(var(--line-strong) / <alpha-value>)'
+        },
         ink: {
           DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
           muted: 'rgb(var(--ink-muted) / <alpha-value>)',
@@ -22,6 +25,9 @@ module.exports = {
           soft: 'rgb(var(--accent-soft) / <alpha-value>)',
           ink: 'rgb(var(--accent-ink) / <alpha-value>)'
         },
+        // The colour of the UP phase the project is currently in. Set from
+        // `data-phase` in CSS, so every screen picks it up automatically.
+        page: 'rgb(var(--page) / <alpha-value>)',
         // UP phase colours, used by the roadmap, calendar and badges alike.
         inception: 'rgb(var(--phase-inception) / <alpha-value>)',
         elaboration: 'rgb(var(--phase-elaboration) / <alpha-value>)',

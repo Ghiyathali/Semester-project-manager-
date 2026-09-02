@@ -66,7 +66,7 @@ export function BurndownChart({ points }: { points: BurndownPoint[] }) {
             name="Remaining"
             type="monotone"
             dataKey="remaining"
-            stroke="rgb(var(--accent))"
+            stroke="rgb(var(--page))"
             strokeWidth={2}
             dot={{ r: 2 }}
             connectNulls={false}
@@ -94,7 +94,7 @@ export function VelocityChart({ stats }: { stats: SprintStats[] }) {
           <Tooltip {...TOOLTIP} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Bar isAnimationActive={false} name="Committed" dataKey="committed" fill="rgb(var(--ink-faint))" radius={[2, 2, 0, 0]} />
-          <Bar isAnimationActive={false} name="Completed" dataKey="completed" fill="rgb(var(--accent))" radius={[2, 2, 0, 0]} />
+          <Bar isAnimationActive={false} name="Completed" dataKey="completed" fill="rgb(var(--page))" radius={[2, 2, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -118,7 +118,7 @@ export function WeeklyLoadChart({ weeks }: { weeks: WeeklyLoad[] }) {
           <Tooltip {...TOOLTIP} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Bar isAnimationActive={false} name="Available" dataKey="planned" fill="rgb(var(--ink-faint))" radius={[2, 2, 0, 0]} />
-          <Bar isAnimationActive={false} name="Logged" dataKey="logged" fill="rgb(var(--accent))" radius={[2, 2, 0, 0]} />
+          <Bar isAnimationActive={false} name="Logged" dataKey="logged" fill="rgb(var(--page))" radius={[2, 2, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

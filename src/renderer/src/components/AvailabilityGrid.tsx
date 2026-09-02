@@ -212,7 +212,7 @@ export function AvailabilityGrid({
                       aria-label={`${weekdayName(weekday)} ${timeStrOf(minutes)}`}
                       aria-pressed={isOn}
                       className={`h-4 border-l border-line transition-colors ${
-                        isOn ? 'bg-accent/70' : 'bg-surface-raised hover:bg-accent/20'
+                        isOn ? 'bg-page/70' : 'bg-surface-raised hover:bg-page/20'
                       }`}
                       onMouseDown={(event) => {
                         event.preventDefault()

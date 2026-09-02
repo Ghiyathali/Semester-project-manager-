@@ -15,7 +15,7 @@ import { addDays } from '@core/dates'
 import { PHASE_LABEL, type PhaseKind } from '@core/types'
 
 import { Card, Modal, PageHeader } from '../components/ui'
-import { freeSlots, phaseOfSprint, projectSlots, today } from '../lib/derive'
+import { currentPhase, freeSlots, phaseOfSprint, projectSlots, today } from '../lib/derive'
 import { formatDate, formatHours } from '../lib/format'
 import { useStore } from '../store/useStore'
 
@@ -52,7 +52,7 @@ export function CalendarView() {
 
     for (const ceremony of snapshot.ceremonies) {
       const phase = ceremony.sprintId ? phaseBySprintId.get(ceremony.sprintId) : undefined
-      const color = phase ? PHASE_COLOR[phase] : 'rgb(var(--accent))'
+      const color = phase ? PHASE_COLOR[phase] : 'rgb(var(--page))'
       list.push({
         id: `ceremony-${ceremony.id}`,
         title: ceremony.title,
@@ -81,7 +81,7 @@ export function CalendarView() {
         start: milestone.date,
         end: addDays(milestone.date, 1),
         allDay: true,
-        backgroundColor: PHASE_COLOR[milestone.phaseKind] ?? 'rgb(var(--accent))',
+        backgroundColor: PHASE_COLOR[milestone.phaseKind] ?? 'rgb(var(--page))',
         borderColor: 'transparent',
         textColor: '#fff',
         extendedProps: {
@@ -144,7 +144,7 @@ export function CalendarView() {
           start: `${slot.date}T${slot.start}`,
           end: `${slot.date}T${slot.end}`,
           display: 'background',
-          backgroundColor: 'rgb(var(--accent) / 0.18)'
+          backgroundColor: 'rgb(var(--page) / 0.18)'
         })
       })
     }
@@ -160,9 +160,10 @@ export function CalendarView() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Calendar"
+        phase={currentPhase(snapshot, today())?.kind}
         description="Ceremonies sit inside your declared working time. Shaded blocks are the hours left to build in."
         actions={
           <>

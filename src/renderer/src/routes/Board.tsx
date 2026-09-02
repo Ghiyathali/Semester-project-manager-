@@ -7,11 +7,12 @@
  */
 import { useMemo, useState } from 'react'
 
+import { diffDays } from '@core/dates'
 import type { ItemStatus } from '@core/types'
 import type { BacklogItemRecord } from '@shared/models'
 
 import { ItemEditor, STATUS_LABEL, type ItemDraft } from '../components/ItemEditor'
-import { Card, EmptyState, PageHeader, PhaseBadge, ProgressBar } from '../components/ui'
+import { Card, EmptyState, PageHeader, ProgressBar, Section, Stat } from '../components/ui'
 import { currentSprint, itemsInSprint, phaseOfSprint, sprintBurndown, projectSlots, today } from '../lib/derive'
 import { formatHours, formatPoints, formatRange } from '../lib/format'
 import { useStore } from '../store/useStore'
@@ -60,6 +61,7 @@ export function Board() {
     .filter((item) => item.status === 'done')
     .reduce((sum, item) => sum + item.points, 0)
   const over = committedHours > sprint.netCapacityHours
+  const daysLeft = diffDays(now, sprint.endDate)
 
   async function onDrop(status: ItemStatus, event: React.DragEvent) {
     event.preventDefault()
@@ -70,9 +72,10 @@ export function Board() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Sprint board"
+        phase={phaseOfSprint(snapshot, sprint)}
         description={sprint.goal}
         actions={
           <>
@@ -97,49 +100,37 @@ export function Board() {
         }
       />
 
-      <Card>
-        <div className="grid gap-4 px-4 py-3 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-ink-muted">Phase</p>
-            <PhaseBadge phase={phaseOfSprint(snapshot, sprint)} className="mt-1" />
-          </div>
-          <div>
-            <p className="text-xs text-ink-muted">Dates</p>
-            <p className="mt-1 text-sm tabular-nums">
-              {formatRange(sprint.startDate, sprint.endDate)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-ink-muted">Committed vs capacity</p>
-            <p className={`mt-1 text-sm tabular-nums ${over ? 'text-warn' : ''}`}>
-              {formatHours(committedHours)} / {formatHours(sprint.netCapacityHours)}
-            </p>
-            <ProgressBar
-              className="mt-1"
-              tone={over ? 'warn' : 'accent'}
-              value={sprint.netCapacityHours ? committedHours / sprint.netCapacityHours : 0}
-            />
-          </div>
-          <div>
-            <p className="text-xs text-ink-muted">Points done</p>
-            <p className="mt-1 text-sm tabular-nums">
-              {formatPoints(donePoints)} / {formatPoints(committedPoints)}
-            </p>
-            <ProgressBar
-              className="mt-1"
-              tone="ok"
-              value={committedPoints ? donePoints / committedPoints : 0}
-            />
-          </div>
+      <div className="rounded-xl border border-line bg-surface-raised px-5 py-4">
+        <div className="grid gap-5 sm:grid-cols-3">
+          <Stat
+            label="Committed vs capacity"
+            value={`${formatHours(committedHours)} / ${formatHours(sprint.netCapacityHours)}`}
+            tone={over ? 'warn' : 'page'}
+          />
+          <Stat
+            label="Points done"
+            value={`${formatPoints(donePoints)} / ${formatPoints(committedPoints)}`}
+          />
+          <Stat
+            label="Sprint ends"
+            value={daysLeft >= 0 ? `${daysLeft} d` : 'ended'}
+            hint={formatRange(sprint.startDate, sprint.endDate)}
+          />
         </div>
+        <ProgressBar
+          className="mt-4"
+          thick
+          tone={over ? 'warn' : 'page'}
+          value={sprint.netCapacityHours ? committedHours / sprint.netCapacityHours : 0}
+        />
         {over && (
-          <p className="border-t border-line bg-warn/10 px-4 py-2 text-xs text-warn">
+          <p className="mt-2.5 text-xs leading-snug text-warn">
             Over-committed by {formatHours(committedHours - sprint.netCapacityHours)}. Move the
-            lowest-priority item back to the backlog rather than planning to work extra hours you do
-            not have.
+            lowest-priority item back to the backlog rather than planning to work hours you do not
+            have.
           </p>
         )}
-      </Card>
+      </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
         {COLUMNS.map((status) => {
@@ -154,7 +145,7 @@ export function Board() {
               onDragLeave={() => setDragOver((current) => (current === status ? null : current))}
               onDrop={(event) => void onDrop(status, event)}
               className={`card min-h-[16rem] transition-colors ${
-                dragOver === status ? 'border-accent bg-accent/5' : ''
+                dragOver === status ? 'border-page bg-page/5' : ''
               }`}
             >
               <header className="card-header">
@@ -179,11 +170,11 @@ export function Board() {
       </div>
 
       {items.length > 0 && (
-        <Card title="Sprint burndown">
-          <div className="px-4 py-3">
+        <Section title="Sprint burndown">
+          <div className="card px-4 py-4">
             <BurndownChart points={burndown} />
           </div>
-        </Card>
+        </Section>
       )}
 
       <ItemEditor
@@ -201,7 +192,7 @@ function ItemCard({ item, onEdit }: { item: BacklogItemRecord; onEdit: () => voi
     <li
       draggable
       onDragStart={(event) => event.dataTransfer.setData('text/plain', String(item.id))}
-      className="cursor-grab rounded-md border border-line bg-surface-raised px-2.5 py-2 active:cursor-grabbing"
+      className="cursor-grab rounded-lg border border-line bg-surface-raised px-2.5 py-2 transition-colors hover:border-line-strong active:cursor-grabbing"
       onDoubleClick={onEdit}
     >
       <div className="flex items-start justify-between gap-2">

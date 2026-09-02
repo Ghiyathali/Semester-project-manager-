@@ -5,6 +5,7 @@ import { DISCIPLINE_LABEL, type Discipline, type ItemStatus } from '@core/types'
 import { ItemEditor, STATUS_LABEL, type ItemDraft } from '../components/ItemEditor'
 import { Card, EmptyState, PageHeader } from '../components/ui'
 import { formatHours, formatPoints, formatRange } from '../lib/format'
+import { currentPhase, today } from '../lib/derive'
 import { useStore } from '../store/useStore'
 
 type Filter = 'all' | 'unassigned' | ItemStatus
@@ -24,6 +25,7 @@ export function Backlog() {
 
   if (!snapshot) return null
 
+  const phase = currentPhase(snapshot, today())
   const query = search.trim().toLowerCase()
   const items = snapshot.items.filter((item) => {
     if (filter === 'unassigned' && item.sprintId !== null) return false
@@ -36,9 +38,10 @@ export function Backlog() {
   const totalHours = items.reduce((sum, item) => sum + item.estimateHours, 0)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Product backlog"
+        phase={phase?.kind}
         description="Everything the project might contain. Pull items into a sprint only when there is capacity for them."
         actions={
           <button className="btn btn-primary" onClick={() => setEditing({})}>
@@ -83,7 +86,7 @@ export function Backlog() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-muted">
+              <thead className="border-b border-line text-left text-xs text-ink-muted">
                 <tr>
                   <th className="table-cell font-medium">Item</th>
                   <th className="table-cell font-medium">Discipline</th>
@@ -98,7 +101,7 @@ export function Backlog() {
                   <tr key={item.id} className="hover:bg-surface-sunken/60">
                     <td className="table-cell">
                       <button
-                        className="text-left text-sm hover:text-accent"
+                        className="text-left text-sm hover:text-page"
                         onClick={() => setEditing(item)}
                       >
                         <span className={item.status === 'done' ? 'text-ink-muted line-through' : ''}>
@@ -166,8 +169,12 @@ export function Backlog() {
         )}
       </Card>
 
-      <Card title="Sprint load">
-        <ul className="divide-y divide-line">
+      <details className="card group">
+        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3">
+          <span className="text-ink-faint transition-transform group-open:rotate-90" aria-hidden>&rsaquo;</span>
+          <span className="card-title">Sprint load</span>
+        </summary>
+        <ul className="divide-y divide-line border-t border-line">
           {snapshot.sprints.map((sprint) => {
             const assigned = snapshot.items.filter((item) => item.sprintId === sprint.id)
             const hours = assigned.reduce((sum, item) => sum + item.estimateHours, 0)
@@ -186,7 +193,7 @@ export function Backlog() {
             )
           })}
         </ul>
-      </Card>
+      </details>
 
       <ItemEditor
         open={editing !== null}

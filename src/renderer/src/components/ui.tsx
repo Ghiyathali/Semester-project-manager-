@@ -1,49 +1,61 @@
-/** Shared presentational primitives. Deliberately small and unstyled-ish. */
+/**
+ * Shared presentational primitives.
+ *
+ * The important distinction here is `Card` versus `Section`. A card is a
+ * bordered box and should be used for something you act on; a section is a
+ * heading with content under it and no box at all. Using cards for everything
+ * is what made the first version feel like a wall of identical rectangles.
+ */
 import { useEffect, useRef, type ReactNode } from 'react'
 
 import { PHASE_LABEL, type PhaseKind, type PlanWarning } from '@core/types'
 
-export const PHASE_CLASS: Record<PhaseKind, { text: string; bg: string; border: string; dot: string }> =
-  {
-    inception: {
-      text: 'text-inception',
-      bg: 'bg-inception/10',
-      border: 'border-inception/30',
-      dot: 'bg-inception'
-    },
-    elaboration: {
-      text: 'text-elaboration',
-      bg: 'bg-elaboration/10',
-      border: 'border-elaboration/30',
-      dot: 'bg-elaboration'
-    },
-    construction: {
-      text: 'text-construction',
-      bg: 'bg-construction/10',
-      border: 'border-construction/30',
-      dot: 'bg-construction'
-    },
-    transition: {
-      text: 'text-transition',
-      bg: 'bg-transition/10',
-      border: 'border-transition/30',
-      dot: 'bg-transition'
-    }
+export const PHASE_CLASS: Record<
+  PhaseKind,
+  { text: string; bg: string; border: string; dot: string }
+> = {
+  inception: {
+    text: 'text-inception',
+    bg: 'bg-inception/12',
+    border: 'border-inception/30',
+    dot: 'bg-inception'
+  },
+  elaboration: {
+    text: 'text-elaboration',
+    bg: 'bg-elaboration/12',
+    border: 'border-elaboration/30',
+    dot: 'bg-elaboration'
+  },
+  construction: {
+    text: 'text-construction',
+    bg: 'bg-construction/12',
+    border: 'border-construction/30',
+    dot: 'bg-construction'
+  },
+  transition: {
+    text: 'text-transition',
+    bg: 'bg-transition/12',
+    border: 'border-transition/30',
+    dot: 'bg-transition'
   }
+}
 
 export function Card({
   title,
   actions,
   children,
+  tone = 'default',
   className = ''
 }: {
   title?: ReactNode
   actions?: ReactNode
   children: ReactNode
+  tone?: 'default' | 'hero' | 'quiet'
   className?: string
 }) {
+  const base = tone === 'hero' ? 'card-hero' : tone === 'quiet' ? 'card-quiet' : 'card'
   return (
-    <section className={`card ${className}`}>
+    <section className={`${base} ${className}`}>
       {(title || actions) && (
         <header className="card-header">
           <h2 className="card-title">{title}</h2>
@@ -55,16 +67,45 @@ export function Card({
   )
 }
 
-export function StatTile({
+/** A heading with content beneath it, no border. */
+export function Section({
+  title,
+  actions,
+  children,
+  className = ''
+}: {
+  title: ReactNode
+  actions?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <section className={className}>
+      <div className="section-title">
+        <h2>{title}</h2>
+        {actions}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+/**
+ * A single number with a label. Deliberately borderless: a row of these reads
+ * as one group rather than four competing boxes.
+ */
+export function Stat({
   label,
   value,
   hint,
-  tone = 'default'
+  tone = 'default',
+  size = 'md'
 }: {
   label: string
   value: ReactNode
   hint?: ReactNode
-  tone?: 'default' | 'ok' | 'warn' | 'danger'
+  tone?: 'default' | 'page' | 'ok' | 'warn' | 'danger'
+  size?: 'md' | 'lg'
 }) {
   const toneClass =
     tone === 'ok'
@@ -73,18 +114,36 @@ export function StatTile({
         ? 'text-warn'
         : tone === 'danger'
           ? 'text-danger'
-          : 'text-ink'
+          : tone === 'page'
+            ? 'text-page'
+            : 'text-ink'
   return (
-    <div className="card px-4 py-3">
-      <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</div>
-      <div className={`stat mt-1 ${toneClass}`}>{value}</div>
-      {hint && <div className="mt-0.5 text-xs text-ink-muted">{hint}</div>}
+    <div>
+      <div className="text-xs text-ink-muted">{label}</div>
+      <div className={`${size === 'lg' ? 'stat-lg' : 'stat'} mt-1.5 ${toneClass}`}>{value}</div>
+      {hint && <div className="mt-1.5 text-xs text-ink-muted">{hint}</div>}
     </div>
   )
 }
 
-export function PhaseBadge({ phase, className = '' }: { phase: PhaseKind; className?: string }) {
+export function PhaseBadge({
+  phase,
+  className = '',
+  subtle = false
+}: {
+  phase: PhaseKind
+  className?: string
+  subtle?: boolean
+}) {
   const style = PHASE_CLASS[phase]
+  if (subtle) {
+    return (
+      <span className={`inline-flex items-center gap-1.5 text-xs ${style.text} ${className}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+        {PHASE_LABEL[phase]}
+      </span>
+    )
+  }
   return (
     <span className={`chip ${style.bg} ${style.text} ${className}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
@@ -133,12 +192,14 @@ export function EmptyState({
 
 export function ProgressBar({
   value,
-  tone = 'accent',
-  className = ''
+  tone = 'page',
+  className = '',
+  thick = false
 }: {
   value: number
-  tone?: 'accent' | 'ok' | 'warn' | 'danger'
+  tone?: 'page' | 'ok' | 'warn' | 'danger' | 'muted'
   className?: string
+  thick?: boolean
 }) {
   const width = `${Math.max(0, Math.min(1, value)) * 100}%`
   const bar =
@@ -148,28 +209,29 @@ export function ProgressBar({
         ? 'bg-warn'
         : tone === 'danger'
           ? 'bg-danger'
-          : 'bg-accent'
+          : tone === 'muted'
+            ? 'bg-ink-faint'
+            : 'bg-page'
   return (
-    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken ${className}`}>
+    <div
+      className={`${thick ? 'h-2' : 'h-1.5'} w-full overflow-hidden rounded-full bg-surface-sunken ${className}`}
+    >
       <div className={`h-full rounded-full ${bar}`} style={{ width }} />
     </div>
   )
 }
 
-export function WarningList({ warnings }: { warnings: PlanWarning[] }) {
+export function WarningList({ warnings, max }: { warnings: PlanWarning[]; max?: number }) {
   if (warnings.length === 0) {
-    return (
-      <p className="px-4 py-3 text-sm text-ink-muted">
-        No problems found with this plan.
-      </p>
-    )
+    return <p className="px-4 py-3 text-sm text-ink-muted">No problems found with this plan.</p>
   }
+  const shown = max ? warnings.slice(0, max) : warnings
   return (
     <ul className="divide-y divide-line">
-      {warnings.map((warning, index) => (
+      {shown.map((warning, index) => (
         <li key={`${warning.code}-${index}`} className="flex gap-3 px-4 py-2.5">
           <span
-            className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
+            className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
               warning.severity === 'error'
                 ? 'bg-danger'
                 : warning.severity === 'warning'
@@ -179,11 +241,18 @@ export function WarningList({ warnings }: { warnings: PlanWarning[] }) {
             aria-hidden
           />
           <div className="min-w-0">
-            <p className="text-sm">{warning.message}</p>
-            {warning.hint && <p className="mt-0.5 text-xs text-ink-muted">{warning.hint}</p>}
+            <p className="text-[13px] leading-snug">{warning.message}</p>
+            {warning.hint && (
+              <p className="mt-0.5 text-xs leading-snug text-ink-muted">{warning.hint}</p>
+            )}
           </div>
         </li>
       ))}
+      {max && warnings.length > max && (
+        <li className="px-4 py-2 text-xs text-ink-muted">
+          and {warnings.length - max} more
+        </li>
+      )}
     </ul>
   )
 }
@@ -230,10 +299,10 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`card my-8 w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} shadow-xl`}
+        className={`card my-8 w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} shadow-2xl`}
       >
-        <header className="card-header">
-          <h2 className="card-title">{title}</h2>
+        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+          <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
           <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close">
             Close
           </button>
@@ -247,26 +316,36 @@ export function Modal({
   )
 }
 
-export function Toolbar({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-2">{children}</div>
-}
-
+/**
+ * Page header with a phase-coloured rail. The rail is the main reason a screen
+ * reads as belonging to Inception or Construction at a glance.
+ */
 export function PageHeader({
   title,
   description,
+  phase,
   actions
 }: {
   title: string
-  description?: string
+  description?: ReactNode
+  phase?: PhaseKind
   actions?: ReactNode
 }) {
   return (
-    <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-        {description && <p className="mt-0.5 max-w-2xl text-sm text-ink-muted">{description}</p>}
+    <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="flex min-w-0 gap-3">
+        <span className="mt-1 w-1 shrink-0 self-stretch rounded-full bg-page" aria-hidden />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="page-title">{title}</h1>
+            {phase && <PhaseBadge phase={phase} />}
+          </div>
+          {description && (
+            <p className="mt-1 max-w-2xl text-[13px] leading-snug text-ink-muted">{description}</p>
+          )}
+        </div>
       </div>
-      {actions && <Toolbar>{actions}</Toolbar>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
   )
 }

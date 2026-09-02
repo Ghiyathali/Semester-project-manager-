@@ -249,13 +249,13 @@ export function Setup() {
         }
       />
 
-      <ol className="mb-4 flex flex-wrap gap-1.5">
+      <ol className="mb-5 flex flex-wrap gap-1.5">
         {STEPS.map((label, index) => (
           <li key={label}>
             <button
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
                 index === step
-                  ? 'bg-accent text-accent-ink'
+                  ? 'bg-page text-white'
                   : 'bg-surface-sunken text-ink-muted hover:text-ink'
               }`}
               onClick={() => setStep(index)}
