@@ -6,6 +6,11 @@ name: Release
 #
 # Installers are built on each platform (Electron apps cannot be cross-packaged
 # reliably), collected, and attached to a single GitHub release.
+#
+# Windows and macOS only. Linux is deliberately not released: the packaging step
+# fails on the Ubuntu runner, and the project does not need it. `npm run
+# build:linux` still works for anyone building locally on Linux, and CI keeps
+# compiling the code on Ubuntu.
 on:
   push:
     tags: ['v*']
@@ -32,9 +37,6 @@ jobs:
           - os: macos-latest
             label: macOS
             script: build:mac
-          - os: ubuntu-latest
-            label: Linux
-            script: build:linux
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,7 +63,7 @@ jobs:
         run: |
           mkdir -p dist-artifacts
           find release -maxdepth 1 -type f \
-            \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) \
+            \( -name '*.exe' -o -name '*.dmg' \) \
             -exec cp {} dist-artifacts/ \;
           ls -la dist-artifacts
 
@@ -100,10 +102,10 @@ jobs:
             | **Windows 10/11** | `...-windows-x64-setup.exe` |
             | **macOS (Apple Silicon)** | `...-macos-arm64.dmg` |
             | **macOS (Intel)** | `...-macos-x64.dmg` |
-            | **Linux (any distro)** | `...-linux-x64.AppImage` |
-            | **Debian / Ubuntu** | `...-linux-x64.deb` |
 
-            Pick the one for your machine from the Assets list below.
+            Pick the one for your machine from the Assets list below. Not sure
+            which Mac you have? Apple menu → About This Mac: "Apple M1/M2/M3/M4"
+            means Apple Silicon, "Intel" means Intel.
 
             ### Installing
 
@@ -119,18 +121,8 @@ jobs:
             xattr -dr com.apple.quarantine "/Applications/Semester Project Manager.app"
             ```
 
-            **Linux** — make the AppImage executable and run it:
-
-            ```bash
-            chmod +x semester-project-manager-*-linux-x64.AppImage
-            ./semester-project-manager-*-linux-x64.AppImage
-            ```
-
-            On Debian or Ubuntu you can instead install the `.deb`:
-
-            ```bash
-            sudo dpkg -i semester-project-manager-*-linux-x64.deb
-            ```
+            **Linux** — no prebuilt download, but you can build one:
+            `npm install && npm run build:linux`.
 
             ---
 

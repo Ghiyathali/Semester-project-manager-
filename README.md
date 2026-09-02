@@ -71,15 +71,15 @@ Grab the installer for your machine from the
 | Windows 10/11 | `…-windows-x64-setup.exe` |
 | macOS (Apple Silicon) | `…-macos-arm64.dmg` |
 | macOS (Intel) | `…-macos-x64.dmg` |
-| Linux (any distro) | `…-linux-x64.AppImage` |
-| Debian / Ubuntu | `…-linux-x64.deb` |
 
 The builds are not code-signed, so each platform asks once whether you trust it:
 
 - **Windows** — SmartScreen says "Windows protected your PC": **More info → Run anyway**.
 - **macOS** — first launch needs **right-click → Open → Open**, not a double-click. If it still
   refuses: `xattr -dr com.apple.quarantine "/Applications/Semester Project Manager.app"`.
-- **Linux** — `chmod +x` the AppImage before running it.
+
+**Linux** has no prebuilt download — the packaging step does not currently work on the CI runner.
+The app itself runs on Linux, so you can build your own with `npm install && npm run build:linux`.
 
 ## Build it yourself
 
@@ -96,12 +96,12 @@ Requires Node 20 or newer. There is no native module to compile — SQLite runs 
 ### Building installers
 
 `npm run build:win`, `build:mac` and `build:linux` each write to `release/`. Electron apps do not
-cross-package reliably, so building for a platform generally has to happen on that platform — which
-is what the release workflow uses three runners for.
+cross-package reliably, so building for a platform has to happen on that platform — which is why
+the release workflow uses one runner per platform.
 
 ### Cutting a release
 
-Pushing a version tag builds installers for all three platforms and attaches them to a GitHub
+Pushing a version tag builds the Windows and macOS installers and attaches them to a GitHub
 release automatically:
 
 ```bash
