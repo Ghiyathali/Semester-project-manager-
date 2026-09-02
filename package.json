@@ -1,6 +1,6 @@
 {
   "name": "semester-project-manager",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Desktop planner that turns a student's real availability into a SCRUM + Unified Process plan for a semester or bachelor project.",
   "main": "./out/main/index.js",
   "author": "Semester Project Manager contributors",
