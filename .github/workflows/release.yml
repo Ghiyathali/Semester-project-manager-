@@ -1,0 +1,138 @@
+name: Release
+
+# Push a version tag to cut a release:
+#   npm version 0.2.0 --no-git-tag-version && git commit -am "Release 0.2.0"
+#   git tag v0.2.0 && git push && git push --tags
+#
+# Installers are built on each platform (Electron apps cannot be cross-packaged
+# reliably), collected, and attached to a single GitHub release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and release (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+            script: build:win
+          - os: macos-latest
+            label: macOS
+            script: build:mac
+          - os: ubuntu-latest
+            label: Linux
+            script: build:linux
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build installer
+        run: npm run ${{ matrix.script }}
+        env:
+          # No signing certificates are configured, so stop electron-builder
+          # from hunting for a keychain identity and failing the macOS build.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Collect installers
+        shell: bash
+        # Only the things a person downloads: the auto-update manifests and
+        # blockmaps electron-builder also emits are not useful here.
+        run: |
+          mkdir -p dist-artifacts
+          find release -maxdepth 1 -type f \
+            \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) \
+            -exec cp {} dist-artifacts/ \;
+          ls -la dist-artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.label }}
+          path: dist-artifacts/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+
+      - name: List what will be published
+        run: ls -la installers
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Semester Project Manager ${{ github.event.inputs.tag || github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          files: installers/*
+          body: |
+            ## Downloads
+
+            | Platform | File |
+            |---|---|
+            | **Windows 10/11** | `...-windows-x64-setup.exe` |
+            | **macOS (Apple Silicon)** | `...-macos-arm64.dmg` |
+            | **macOS (Intel)** | `...-macos-x64.dmg` |
+            | **Linux (any distro)** | `...-linux-x64.AppImage` |
+            | **Debian / Ubuntu** | `...-linux-x64.deb` |
+
+            Pick the one for your machine from the Assets list below.
+
+            ### Installing
+
+            **Windows** — run the `.exe`. The app is not code-signed, so
+            SmartScreen will say "Windows protected your PC": click
+            **More info → Run anyway**.
+
+            **macOS** — open the `.dmg` and drag the app to Applications. It is
+            not notarised, so the first launch needs **right-click → Open →
+            Open** rather than a double-click. If macOS still refuses, run:
+
+            ```bash
+            xattr -dr com.apple.quarantine "/Applications/Semester Project Manager.app"
+            ```
+
+            **Linux** — make the AppImage executable and run it:
+
+            ```bash
+            chmod +x semester-project-manager-*-linux-x64.AppImage
+            ./semester-project-manager-*-linux-x64.AppImage
+            ```
+
+            On Debian or Ubuntu you can instead install the `.deb`:
+
+            ```bash
+            sudo dpkg -i semester-project-manager-*-linux-x64.deb
+            ```
+
+            ---
+
+            Your data stays on your machine, in a single SQLite file. No account,
+            no server, no telemetry.

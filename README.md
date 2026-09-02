@@ -61,9 +61,27 @@ Transition 10% — and every phase is guaranteed at least one full sprint. If th
 short for four distinct phases, phases are **merged** rather than dropped, and the merged phase
 inherits the deliverables of everything it absorbed.
 
-## Install
+## Download
 
-Download an installer from the releases page, or build it yourself:
+Grab the installer for your machine from the
+**[latest release](https://github.com/Ghiyathali/Semester-project-manager-/releases/latest)**:
+
+| Platform | File |
+|---|---|
+| Windows 10/11 | `…-windows-x64-setup.exe` |
+| macOS (Apple Silicon) | `…-macos-arm64.dmg` |
+| macOS (Intel) | `…-macos-x64.dmg` |
+| Linux (any distro) | `…-linux-x64.AppImage` |
+| Debian / Ubuntu | `…-linux-x64.deb` |
+
+The builds are not code-signed, so each platform asks once whether you trust it:
+
+- **Windows** — SmartScreen says "Windows protected your PC": **More info → Run anyway**.
+- **macOS** — first launch needs **right-click → Open → Open**, not a double-click. If it still
+  refuses: `xattr -dr com.apple.quarantine "/Applications/Semester Project Manager.app"`.
+- **Linux** — `chmod +x` the AppImage before running it.
+
+## Build it yourself
 
 ```bash
 git clone https://github.com/Ghiyathali/Semester-project-manager-.git
@@ -77,12 +95,21 @@ Requires Node 20 or newer. There is no native module to compile — SQLite runs 
 
 ### Building installers
 
-```bash
-npm run build:win
-```
+`npm run build:win`, `build:mac` and `build:linux` each write to `release/`. Electron apps do not
+cross-package reliably, so building for a platform generally has to happen on that platform — which
+is what the release workflow uses three runners for.
 
-`build:mac` and `build:linux` are also available; each writes to `release/`. Building for a platform
-generally has to happen on that platform.
+### Cutting a release
+
+Pushing a version tag builds installers for all three platforms and attaches them to a GitHub
+release automatically:
+
+```bash
+npm version 0.2.0 --no-git-tag-version
+git commit -am "Release 0.2.0"
+git tag v0.2.0
+git push && git push --tags
+```
 
 ## Working on it
 
