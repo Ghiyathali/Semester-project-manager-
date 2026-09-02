@@ -4,10 +4,17 @@ copyright: Copyright (c) 2026 Semester Project Manager contributors
 directories:
   output: release
   buildResources: resources
+# Exclusion-based, so the production dependency tree (sql.js) is packaged
+# automatically; electron-builder prunes devDependencies on its own.
 files:
-  - out/**/*
-  - package.json
+  - '!src/*'
   - '!**/*.map'
+  - '!**/*.{ts,tsx}'
+  - '!{.github,.vscode}/*'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{electron.vite.config.ts,vite.web.config.ts,vitest.config.ts,eslint.config.mjs}'
+  - '!{postcss.config.cjs,tailwind.config.cjs,.prettierrc,.gitignore}'
+  - '!{README.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md}'
 extraResources:
   # sql.js loads its WebAssembly binary at runtime; keep it outside the asar so
   # the plain filesystem path in db/connection.ts resolves in a packaged build.
